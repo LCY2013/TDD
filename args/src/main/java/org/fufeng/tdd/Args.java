@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 public class Args {
 
@@ -21,32 +23,17 @@ public class Args {
     }
 
     private static Object parseOption(Parameter parameter, List<String> arguments) {
-        Option option = parameter.getAnnotation(Option.class);
-
-        Object initargs = null;
-
-        if (parameter.getType() == boolean.class || parameter.getType() == Boolean.class) {
-            initargs = arguments.contains("-" + option.value());
-        }
-
-        if (parameter.getType() == int.class || parameter.getType() == Integer.class) {
-            int index = arguments.indexOf("-" + option.value());
-            if (index == -1) {
-                initargs = 0;
-            } else {
-                initargs = Integer.parseInt(arguments.get(index + 1));
-            }
-        }
-
-        if (parameter.getType() == String.class) {
-            int index = arguments.indexOf("-" + option.value());
-            if (index == -1) {
-                initargs = "";
-            } else {
-                initargs = arguments.get(index + 1);
-            }
-        }
-        return initargs;
+        Class<?> type = parameter.getType();
+        return PARSERS.get(type).parse(arguments, parameter.getAnnotation(Option.class));
     }
+
+    private static Map<Class<?>, OptionParser> PARSERS = Map.of(
+            boolean.class, BooleanParser.parser,
+            Boolean.class, BooleanParser.parser,
+            int.class, new SingleValueOptionParser<Integer>(Integer::parseInt, v -> 0),
+            Integer.class, new SingleValueOptionParser<Integer>(Integer::parseInt, v -> 0),
+            //String.class, new SingleValueOptionParser<String>(String::valueOf, v-> "")
+            String.class, new SingleValueOptionParser<String>(Function.identity(), v-> "")
+    );
 
 }
