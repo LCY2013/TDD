@@ -2,8 +2,6 @@ package org.fufeng.tdd;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.annotation.Annotation;
-
 import static java.util.Arrays.asList;
 import static org.fufeng.tdd.BeforeTest.option;
 import static org.junit.jupiter.api.Assertions.*;
