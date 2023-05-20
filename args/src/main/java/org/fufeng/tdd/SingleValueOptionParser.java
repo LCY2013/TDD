@@ -2,6 +2,7 @@ package org.fufeng.tdd;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 class SingleValueOptionParser<T> implements OptionParser<T> {
 
@@ -21,31 +22,24 @@ class SingleValueOptionParser<T> implements OptionParser<T> {
             return zeroValue.apply(null);
         }
 
-        // TODO: 这里可以增加注释，更推荐的方式是，通过抽取方法，让方法名成为注释。或者，换一种更容易理解的方法来实现同样的功能.
-        if (isReachEndOfList(arguments, index) || isFollowedByOtherFlag(arguments, index)) {
+        List<String> values = valuesFrom(arguments, index);
+
+        if (values.size() < 1) {
             throw new InsufficientArgmentsException(option.value());
         }
 
-        if (secondArgumentIsNotAFlag(arguments, index)) {
+        if (values.size() > 1) {
             throw new TooManyArgmentsException(option.value());
         }
 
-        String value = arguments.get(index + 1);
+        String value = values.get(0);
         return valueParser.apply(value);
     }
 
-    private static boolean secondArgumentIsNotAFlag(List<String> arguments, int index) {
-        return (index + 2) < arguments.size() &&
-                !arguments.get(index + 2).startsWith("-");
-    }
-
-    private static boolean isFollowedByOtherFlag(List<String> arguments, int index) {
-        return index + 1 < arguments.size() &&
-                arguments.get(index + 1).startsWith("-");
-    }
-
-    private static boolean isReachEndOfList(List<String> arguments, int index) {
-        return index + 1 == arguments.size();
+    private static List<String> valuesFrom(List<String> arguments, int index) {
+        return arguments.subList(index + 1, IntStream.range(index + 1, arguments.size())
+                .filter(it -> arguments.get(it).startsWith("-"))
+                .findFirst().orElse(arguments.size()));
     }
 
 }
