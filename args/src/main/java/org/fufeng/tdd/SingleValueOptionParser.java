@@ -21,6 +21,7 @@ class SingleValueOptionParser<T> implements OptionParser<T> {
             return zeroValue.apply(null);
         }
 
+        // TODO: 这里可以增加注释，更推荐的方式是，通过抽取方法，让方法名成为注释。或者，换一种更容易理解的方法来实现同样的功能.
         if (index + 1 == arguments.size() || (index + 1 < arguments.size() &&
                 arguments.get(index + 1).startsWith("-"))) {
             throw new InsufficientArgmentsException(option.value());
