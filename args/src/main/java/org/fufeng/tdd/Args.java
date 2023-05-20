@@ -1,5 +1,7 @@
 package org.fufeng.tdd;
 
+import org.fufeng.tdd.exceptions.IllegalOptionException;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
@@ -32,12 +34,15 @@ public class Args {
     }
 
     private static Map<Class<?>, OptionParser> PARSERS = Map.of(
-            boolean.class, BooleanOptionParser.parser,
-            Boolean.class, BooleanOptionParser.parser,
-            int.class, new SingleValueOptionParser<Integer>(Integer::parseInt, v -> 0),
-            Integer.class, new SingleValueOptionParser<Integer>(Integer::parseInt, v -> 0),
+            boolean.class, OptionParsers.bool(),
+            Boolean.class, OptionParsers.bool(),
+            int.class, OptionParsers.unary(Integer::parseInt, v -> 0),
+            Integer.class, OptionParsers.unary(Integer::parseInt, v -> 0),
             //String.class, new SingleValueOptionParser<String>(String::valueOf, v-> "")
-            String.class, new SingleValueOptionParser<String>(Function.identity(), v-> "")
+            String.class, OptionParsers.unary(Function.identity(), v-> ""),
+            String[].class, OptionParsers.list(Function.identity(), String[]::new),
+            Integer[].class, OptionParsers.list(Integer::parseInt, Integer[]::new),
+            int[].class, OptionParsers.list(Integer::parseInt, Integer[]::new)
     );
 
 }

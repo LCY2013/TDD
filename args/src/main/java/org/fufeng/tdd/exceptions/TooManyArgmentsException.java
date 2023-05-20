@@ -1,13 +1,13 @@
-package org.fufeng.tdd;
+package org.fufeng.tdd.exceptions;
 
-public class InsufficientArgmentsException extends RuntimeException {
+public class TooManyArgmentsException extends RuntimeException {
 
     private Object option;
 
-    public InsufficientArgmentsException() {
+    public TooManyArgmentsException() {
     }
 
-    public InsufficientArgmentsException(String message) {
+    public TooManyArgmentsException(String message) {
         super(message);
         this.option = message;
     }

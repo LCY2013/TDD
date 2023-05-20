@@ -1,5 +1,6 @@
 package org.fufeng.tdd;
 
+import org.fufeng.tdd.exceptions.IllegalOptionException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -99,13 +100,15 @@ public class ArgsTest {
 
     @Test
     public void should_example_2() {
-        /*ListOptions options = Args.parse(ListOptions.class, "-g", "this", "is", "a", "list", "-d", "1", "2", "-3", "5");
+        ListOptions options = Args.parse(ListOptions.class, "-g", "this", "is", "a", "list", "-d", "1", "2", "-3", "5");
 
         assertArrayEquals(new String[]{"this", "is", "a", "list"}, options.group());
-        assertArrayEquals(new int[]{1, 2, -3, 5}, options.decimals);*/
+        assertArrayEquals(new Integer[]{1, 2, -3, 5}, options.decimals);
     }
 
-    static record ListOptions(@Option("g") String[] group, @Option("d") int[] decimals) {}
+    static record ListOptions(@Option("g") String[] group, @Option("d") Integer[] decimals) {}
+
+
 
     // -l -p 8080 -d /usr/logs
     @Test

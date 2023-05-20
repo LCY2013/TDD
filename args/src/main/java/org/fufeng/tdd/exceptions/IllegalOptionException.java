@@ -1,4 +1,4 @@
-package org.fufeng.tdd;
+package org.fufeng.tdd.exceptions;
 
 public class IllegalOptionException extends RuntimeException {
 
