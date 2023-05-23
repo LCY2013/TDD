@@ -4,14 +4,13 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 // 行为验证
@@ -34,6 +33,7 @@ class StudentRepositoryMockTest {
     }
 
     @Test
+    @Order(1)
     public void should_generate_id_for_saved_entity() {
         studentRepository.save(john);
 
@@ -42,15 +42,17 @@ class StudentRepositoryMockTest {
 
 
     @Test
+    @Order(2)
     public void should_be_able_to_load_saved_student_by_id() {
         when(entityManager.find(any(), any())).thenReturn(john);
-        assertTrue(studentRepository.findById(1).isPresent());
-        //assertEquals(john, studentRepository.findById(1).get());
+        //assertTrue(studentRepository.findById(1).isPresent());
+        assertEquals(john, studentRepository.findById(1).get());
 
         verify(entityManager).find(Student.class, 1L);
     }
 
     @Test
+    @Order(3)
     public void should_be_able_to_load_saved_student_by_email() {
         TypedQuery query = mock(TypedQuery.class);
 
