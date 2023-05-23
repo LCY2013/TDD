@@ -5,17 +5,18 @@ import org.fufeng.tdd.exceptions.InsufficientArgmentsException;
 import org.fufeng.tdd.exceptions.TooManyArgmentsException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
+
+import java.util.List;
+import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.fufeng.tdd.BeforeTest.option;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.List;
-import java.util.function.Function;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class OptionParsersTest {
 
@@ -59,13 +60,21 @@ public class OptionParsersTest {
             assertEquals(8080, OptionParsers.unary(Integer::parseInt, v -> 0).parse(asList("-p", "8080"), option("p")));
         }
 
+        /**
+         * 行为验证
+         */
         @Test // happy path
         public void should_parse_value_with_any_if_flag_present() {
-            Object parsed = new Object();
+            /*Object parsed = new Object();
             Function parser = any -> parsed;
             Object whatever = new Object();
 
-            assertSame(parsed, OptionParsers.unary(parser, v -> whatever).parse(asList("-p", "8080"), option("p")));
+            assertSame(parsed, OptionParsers.unary(parser, v -> whatever).parse(asList("-p", "8080"), option("p")));*/
+
+            Function parser = mock(Function.class);
+
+            OptionParsers.unary(parser, v -> v).parse(asList("-p", "8080"), option("p"));
+            verify(parser).apply("8080");
         }
 
         @Test // sad path
@@ -114,9 +123,21 @@ public class OptionParsersTest {
     @Nested
     class ListOptionParser {
         //TODO: -g this is a list -d 1 2 -3 5
+
+        /**
+         * 行为验证
+         */
         @Test
         public void should_not_treat_negative_int_as_flag() {
-            assertArrayEquals(new String[]{"1", "-12"}, OptionParsers.list(String::valueOf, String[]::new).parse(asList("-g", "1", "-12"), option("g")));
+            //assertArrayEquals(new String[]{"1", "-12"}, OptionParsers.list(String::valueOf, String[]::new).parse(asList("-g", "1", "-12"), option("g")));
+
+            Function parser = mock(Function.class);
+
+            OptionParsers.list(parser, String[]::new).parse(asList("-g", "1", "-12"), option("g"));
+
+            InOrder inOrder = inOrder(parser, parser);
+            inOrder.verify(parser).apply("1");
+            inOrder.verify(parser).apply("-12");
         }
 
         //TODO: -g "this" "is" {"this", is"}
