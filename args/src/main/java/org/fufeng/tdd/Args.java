@@ -1,6 +1,7 @@
 package org.fufeng.tdd;
 
 import org.fufeng.tdd.exceptions.IllegalOptionException;
+import org.fufeng.tdd.exceptions.InsufficientArgmentsException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
@@ -45,7 +46,7 @@ public class Args<T> {
             Object[] initargs = Arrays.stream(constructor.getParameters()).map(param -> parseOption(param, arguments)).toArray();
 
             return (T) constructor.newInstance(initargs);
-        } catch (IllegalOptionException e) {
+        } catch (IllegalOptionException | InsufficientArgmentsException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
