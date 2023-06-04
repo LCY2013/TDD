@@ -15,15 +15,15 @@ public class Context {
 
     private final Map<Class<?>, Provider<?>> prividers = new HashMap<>();
 
-    public <ComponentType> void bind(Class<ComponentType> componentType, ComponentType instance) {
+    public <Type> void bind(Class<Type> componentType, Type instance) {
         prividers.put(componentType, () -> instance);
     }
 
-    public <ComponentType, ComponentImplementation extends ComponentType>
-    void bind(Class<ComponentType> type, Class<ComponentImplementation> implementation) {
+    public <Type, Implementation extends Type>
+    void bind(Class<Type> type, Class<Implementation> implementation) {
         prividers.put(type, () -> {
             try {
-                Constructor<ComponentImplementation> constructor = getInjectConstructor(implementation);
+                Constructor<Implementation> constructor = getInjectConstructor(implementation);
                 return constructor.newInstance(Arrays.stream(constructor.getParameters()).map(p -> get(p.getType())).toArray());
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
@@ -31,9 +31,9 @@ public class Context {
         });
     }
 
-    private static  <ComponentImplementation> Constructor<ComponentImplementation>
-    getInjectConstructor(Class<ComponentImplementation> implementation) throws NoSuchMethodException {
-        return (Constructor<ComponentImplementation>) Arrays.stream(implementation.getConstructors()).
+    private static  <Type> Constructor<Type>
+    getInjectConstructor(Class<Type> implementation) throws NoSuchMethodException {
+        return (Constructor<Type>) Arrays.stream(implementation.getConstructors()).
                 filter(c -> c.isAnnotationPresent(Inject.class)).
                 findFirst().orElseGet(() -> {
                     try {
@@ -44,8 +44,8 @@ public class Context {
                 });
     }
 
-    public <ComponentType> ComponentType get(Class<ComponentType> componentType) {
-        return (ComponentType) prividers.get(componentType).get();
+    public <Type> Type get(Class<Type> componentType) {
+        return (Type) prividers.get(componentType).get();
     }
 
 }
