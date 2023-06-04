@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.glassfish.jersey.test-framework:jersey-test-framework-util:3.1.1'
     implementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-jetty:3.1.1'
     implementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+    implementation 'com.google.code.guice:guice:1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
