@@ -11,8 +11,6 @@ import java.util.Map;
 
 public class Context {
 
-    private final Map<Class<?>, Class<?>> componentImplementations = new HashMap<>();
-
     private final Map<Class<?>, Provider<?>> prividers = new HashMap<>();
 
     public <Type> void bind(Class<Type> componentType, Type instance) {
