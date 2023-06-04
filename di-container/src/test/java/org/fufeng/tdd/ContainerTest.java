@@ -1,5 +1,7 @@
 package org.fufeng.tdd;
 
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -7,15 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ContainerTest {
 
-    interface Component {
+    Context context;
 
-    }
-
-    static class ComponentWithDefaultConstructor implements Component {
-
-        public ComponentWithDefaultConstructor() {
-        }
-
+    @BeforeEach
+    public void setup() {
+        context = new Context();
     }
 
     @Nested
@@ -23,8 +21,6 @@ public class ContainerTest {
         //todo: instance
         @Test
         public void should_bind_type_to_a_specific_instance() {
-            Context context = new Context();
-
             Component instance = new Component() {};
 
             context.bind(Component.class, instance);
@@ -39,8 +35,6 @@ public class ContainerTest {
             //todo: no args constructor
             @Test
             public void should_bind_type_to_a_class_with_default_constructor() {
-                Context context = new Context();
-
                 context.bind(Component.class, ComponentWithDefaultConstructor.class);
 
                 Component instance = context.get(Component.class);
@@ -50,7 +44,35 @@ public class ContainerTest {
             }
 
             //todo: with dependencies
+            @Test
+            public void should_bind_type_to_a_class_with_injection_constructor() {
+                Dependency dependency = new Dependency() {};
+
+                context.bind(Component.class, ComponentWithInjectConstructor.class);
+                context.bind(Dependency.class, dependency);
+
+                Component component = context.get(Component.class);
+
+                assertNotNull(component);
+                assertSame(dependency, ((ComponentWithInjectConstructor)component).getDependency());
+            }
+
             //todo: A -> B -> C
+            @Test
+            public void should_bind_type_to_a_class_with_transitive_dependencies() {
+                context.bind(Component.class, ComponentWithInjectConstructor.class);
+                context.bind(Dependency.class, DependencyWithInjectConstructor.class);
+                context.bind(String.class, "indirect dependency");
+
+                Component component = context.get(Component.class);
+                assertNotNull(component);
+
+                Dependency dependency = ((ComponentWithInjectConstructor)component).getDependency();
+                assertTrue(dependency instanceof DependencyWithInjectConstructor);
+
+                assertEquals("indirect dependency", ((DependencyWithInjectConstructor)dependency).getDependency());
+            }
+
         }
 
         @Nested
@@ -72,6 +94,50 @@ public class ContainerTest {
     @Nested
     class LifecycleManagement {
 
+    }
+
+}
+
+interface Component {
+
+}
+
+interface Dependency {
+
+}
+
+class ComponentWithDefaultConstructor implements Component {
+
+    public ComponentWithDefaultConstructor() {
+    }
+
+}
+
+class ComponentWithInjectConstructor implements Component {
+
+    private final Dependency dependency;
+
+    @Inject
+    public ComponentWithInjectConstructor(Dependency dependency) {
+        this.dependency = dependency;
+    }
+
+    public Dependency getDependency() {
+        return dependency;
+    }
+}
+
+class DependencyWithInjectConstructor implements Dependency {
+
+    private final String dependency;
+
+    @Inject
+    public DependencyWithInjectConstructor(String dependency) {
+        this.dependency = dependency;
+    }
+
+    public String getDependency() {
+        return dependency;
     }
 
 }
