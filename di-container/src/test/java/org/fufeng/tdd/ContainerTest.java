@@ -32,6 +32,7 @@ public class ContainerTest {
         //todo: interface
         @Nested
         class ConstructorInjection {
+            // happy path
             //todo: no args constructor
             @Test
             public void should_bind_type_to_a_class_with_default_constructor() {
@@ -72,6 +73,22 @@ public class ContainerTest {
 
                 assertEquals("indirect dependency", ((DependencyWithInjectConstructor)dependency).getDependency());
             }
+
+            //sad path
+
+            //todo: multi inject constructors
+            @Test
+            public void should_throw_exception_if_multi_inject_constructor_provided() {
+                assertThrows(IllegalComponentException.class, () -> context.bind(Component.class, ComponentWithMultiInjectConstructor.class));
+            }
+
+            //todo: no default constructor and inject constructor
+            @Test
+            public void should_throw_exception_if_no_inject_nor_default_constructor_provided() {
+                assertThrows(IllegalComponentException.class, () -> context.bind(Component.class, ComponentWithNoInjectConstructorNorDefaultConstructor.class));
+            }
+
+            //todo: dependencies not exist
 
         }
 
@@ -124,6 +141,28 @@ class ComponentWithInjectConstructor implements Component {
 
     public Dependency getDependency() {
         return dependency;
+    }
+}
+
+class ComponentWithMultiInjectConstructor implements Component {
+
+    private final String name;
+    private Double value;
+
+    @Inject
+    public ComponentWithMultiInjectConstructor(String name) {
+        this.name = name;
+    }
+
+    @Inject
+    public ComponentWithMultiInjectConstructor(String name, Double value) {
+        this.name = name;
+        this.value = value;
+    }
+}
+
+class ComponentWithNoInjectConstructorNorDefaultConstructor implements Component {
+    public ComponentWithNoInjectConstructorNorDefaultConstructor(String name) {
     }
 }
 
