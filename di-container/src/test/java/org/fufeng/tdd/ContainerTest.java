@@ -72,12 +72,36 @@ public class ContainerTest {
         }
 
         @Test
+        public void should_throw_exception_when_get_context_if_transitive_cyclic_dependencies_found() {
+            config.bind(Component.class, ComponentWithInjectConstructor.class);
+            config.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
+            config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
+
+            assertThrowsExactly(CyclicDependenciesException.class, () -> config.getContext());
+        }
+
+        @Test
         public void should_throw_details_exception_if_transitive_cyclic_dependencies_found() {
             config.bind(Component.class, ComponentWithInjectConstructor.class);
             config.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
             config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
 
             CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
+
+            Set<Class<?>> classes = exception.getComponents();
+            assertEquals(3, classes.size());
+            assertTrue(classes.contains(Component.class));
+            assertTrue(classes.contains(Dependency.class));
+            assertTrue(classes.contains(AnotherDependency.class));
+        }
+
+        @Test
+        public void should_throw_details_exception_when_get_context_if_transitive_cyclic_dependencies_found() {
+            config.bind(Component.class, ComponentWithInjectConstructor.class);
+            config.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
+            config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
+
+            CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> config.getContext());
 
             Set<Class<?>> classes = exception.getComponents();
             assertEquals(3, classes.size());
