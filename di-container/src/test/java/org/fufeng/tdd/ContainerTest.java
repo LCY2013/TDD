@@ -299,6 +299,121 @@ public class ContainerTest {
         @Nested
         class MethodInjection {
 
+            static class InjectMethodWithNoDependency {
+                boolean called;
+
+                @Inject
+                public void install() {
+                    this.called = true;
+                }
+            }
+
+            //todo inject method with no dependencies will be called
+            @Test
+            public void should_call_inject_method_even_if_no_dependency_declared() {
+                config.bind(InjectMethodWithNoDependency.class, InjectMethodWithNoDependency.class);
+
+                InjectMethodWithNoDependency component =
+                        config.getContext().get(InjectMethodWithNoDependency.class).get();
+
+                assertTrue(component.called);
+            }
+
+            static class InjectMethodWithDependency {
+                Dependency dependency;
+
+                @Inject
+                public void install(Dependency dependency) {
+                    this.dependency = dependency;
+                }
+
+            }
+
+            @Test
+            public void should_inject_dependency_via_inject_method() {
+                Dependency dependency = new Dependency() {
+                };
+                config.bind(Dependency.class, dependency);
+                config.bind(InjectMethodWithDependency.class, InjectMethodWithDependency.class);
+
+                InjectMethodWithDependency component = config.getContext().get(InjectMethodWithDependency.class).get();
+                assertSame(dependency, component.dependency);
+            }
+
+            //todo inject method with dependencies will be injected
+            //todo override inject method from superclass
+            static class SuperClassWithInjectMethod {
+                int superClassCalled;
+
+                @Inject
+                public void installSuper() {
+                    this.superClassCalled++;
+                }
+            }
+
+            static class SubClassWithInjectMethod extends SuperClassWithInjectMethod {
+                int subClassCalled;
+
+                @Inject
+                public void installSub() {
+                    this.subClassCalled = super.superClassCalled + 1;
+                }
+            }
+
+            @Test
+            public void should_inject_dependencies_via_inject_method_from_superclass() {
+                config.bind(SubClassWithInjectMethod.class, SubClassWithInjectMethod.class);
+
+                SubClassWithInjectMethod component = config.getContext().get(SubClassWithInjectMethod.class).get();
+
+                assertEquals(1, component.superClassCalled);
+                assertEquals(2, component.subClassCalled);
+            }
+
+            static class SubClassOverrideSuperClassWithInject extends SuperClassWithInjectMethod{
+
+                @Inject
+                @Override
+                public void installSuper() {
+                    super.installSuper();
+                }
+
+            }
+
+            @Test
+            public void should_only_call_once_if_subclass_override_inject_method_with_inejct() {
+                config.bind(SubClassOverrideSuperClassWithInject.class, SubClassOverrideSuperClassWithInject.class);
+
+                SubClassOverrideSuperClassWithInject component = config.getContext().get(SubClassOverrideSuperClassWithInject.class).get();
+                assertEquals(1, component.superClassCalled);
+            }
+
+            static class SubClassOverrideSuperClassWithNoInject extends  SuperClassWithInjectMethod {
+                @Override
+                public void installSuper() {
+                    super.installSuper();
+                }
+            }
+
+            @Test
+            public void should_not_call_inject_method_if_override_method_no_inject() {
+                config.bind(SubClassOverrideSuperClassWithNoInject.class, SubClassOverrideSuperClassWithNoInject.class);
+
+                SubClassOverrideSuperClassWithNoInject component = config.getContext().get(SubClassOverrideSuperClassWithNoInject.class).get();
+                assertEquals(0, component.superClassCalled);
+            }
+
+            //todo include dependencies from inject methods
+            @Test
+            public void shoudl_include_dependencies_from_inject_methods() {
+               ConstructorInjectionProvider<InjectMethodWithDependency> provider =
+                       new ConstructorInjectionProvider<>(InjectMethodWithDependency.class);
+
+               assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
+            }
+
+            //todo throw exception if type parameter defined
+
         }
     }
 
