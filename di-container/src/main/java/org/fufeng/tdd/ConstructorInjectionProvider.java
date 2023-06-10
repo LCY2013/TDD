@@ -18,9 +18,14 @@ public class ConstructorInjectionProvider<T> implements ComponentProvider<T> {
     private final List<Method> methods;
 
     public ConstructorInjectionProvider(Class<T> component) {
+        if (Modifier.isAbstract(component.getModifiers())) throw new IllegalComponentException(component);
+        if (Modifier.isInterface(component.getModifiers())) throw new IllegalComponentException(component);
         this.constructor = getInjectConstructor(component);
         this.fields = getFields(component);
         this.methods = getMethods(component);
+
+        if (fields.stream().anyMatch(field -> Modifier.isFinal(field.getModifiers()))) throw new IllegalComponentException(component);
+        if (methods.stream().anyMatch(method -> Arrays.stream(method.getTypeParameters()).anyMatch(t->true))) throw new IllegalComponentException(component);
     }
 
     @Override
