@@ -7,21 +7,11 @@ public class ContextConfig {
     private final Map<Class<?>, ComponentProvider<?>> componentPrividers = new HashMap<>();
 
     public <Type> void bind(Class<Type> componentType, Type instance) {
-        componentPrividers.put(componentType, new ComponentProvider<Type>() {
-            @Override
-            public Type get(Context context) {
-                return instance;
-            }
-
-            @Override
-            public List<Class<?>> getDependencies() {
-                return List.of();
-            }
-        });
+        componentPrividers.put(componentType, ctx -> instance);
     }
 
     public <Type, Implementation extends Type> void bind(Class<Type> type, Class<Implementation> implementation) {
-        componentPrividers.put(type, new ConstructorInjectionProvider<>(implementation));
+        componentPrividers.put(type, new InjectionProvider<>(implementation));
     }
 
     public Context getContext() {
