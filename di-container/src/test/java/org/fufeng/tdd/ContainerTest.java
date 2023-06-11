@@ -9,9 +9,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ContainerTest {
 
@@ -140,6 +137,40 @@ public class ContainerTest {
                 assertTrue(classes.contains(Component.class));
                 assertTrue(classes.contains(Dependency.class));
                 assertTrue(classes.contains(AnotherDependency.class));
+            }
+
+            //todo throw exception if dependency not found
+            //todo throw exception if cyclic dependency
+            //todo provide dependency information for field injection
+
+            static class DependencyNotFoundWithFieldInjection {
+                @Inject
+                String dependency;
+            }
+
+            @Test
+            public void should_throw_exception_when_field_dependency_miss() {
+                config.bind(DependencyNotFoundWithFieldInjection.class, DependencyNotFoundWithFieldInjection.class);
+
+                assertThrows(DependencyNotFoundException.class, () -> config.getContext());
+            }
+
+            static class DependencyWithFieldInjection implements Dependency {
+                @Inject
+                ComponentWithFieldInjection component;
+            }
+
+            static class ComponentWithFieldInjection {
+                @Inject
+                Dependency dependency;
+            }
+
+            @Test
+            public void should_throw_exception_when_field_has_cyclic_dependencies() {
+                config.bind(ComponentWithFieldInjection.class, ComponentWithFieldInjection.class);
+                config.bind(Dependency.class, DependencyWithFieldInjection.class);
+
+                assertThrows(CyclicDependenciesException.class, () -> config.getContext());
             }
         }
 
