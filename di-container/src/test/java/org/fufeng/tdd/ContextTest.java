@@ -10,12 +10,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -132,7 +128,7 @@ public class ContextTest {
 
             Context context = config.getContext();
 
-            ParameterizedType type = (ParameterizedType)new TypeLiteral<Provider<Component>>() {
+            ParameterizedType type = (ParameterizedType) new TypeLiteral<Provider<Component>>() {
             }.getType();
             //assertEquals(Provider.class, type.getRawType());
             //assertEquals(Component.class, type.getActualTypeArguments()[0]);
@@ -150,7 +146,7 @@ public class ContextTest {
 
             Context context = config.getContext();
 
-            ParameterizedType type = (ParameterizedType)new TypeLiteral<List<Component>>() {
+            ParameterizedType type = (ParameterizedType) new TypeLiteral<List<Component>>() {
             }.getType();
 
             assertFalse(context.get(type).isPresent());
@@ -158,8 +154,56 @@ public class ContextTest {
 
         static abstract class TypeLiteral<T> {
             public Type getType() {
-                return ((ParameterizedType)getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+                return ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
             }
+        }
+
+        @Test
+        public void should_not_get_generic_type_from_self_class() {
+            Provider<Component> provider = () -> new Component() {
+            };
+            Type genericSuperclass = provider.getClass().getGenericSuperclass();
+
+            assertEquals(Object.class, genericSuperclass);
+        }
+
+        @Test
+        public void should_get_generic_type_from_class_field() throws NoSuchFieldException {
+            Field componentProviderField = FieldGenericType.class.getDeclaredField("componentProvider");
+
+            ParameterizedType genericType = (ParameterizedType) componentProviderField.getGenericType();
+            //assertEquals(Provider<Component>.class, genericType);
+
+            Type type = genericType.getActualTypeArguments()[0];
+            assertEquals(Component.class, type);
+        }
+
+        static class FieldGenericType {
+            Provider<Component> componentProvider;
+
+        }
+
+        @Test
+        public void should_get_generic_type_from_class_method() throws NoSuchMethodException {
+            Method method =
+                    Arrays.stream(MethodGenericType.class.getDeclaredMethods()).
+                            filter(m -> m.getName().equals("install")).findAny().get();
+
+            Type type = method.getParameters()[0].getParameterizedType();
+
+            if (type instanceof ParameterizedType) {
+                type = ((ParameterizedType)type).getActualTypeArguments()[0];
+            }
+
+            assertEquals(Component.class, type);
+        }
+
+        static class MethodGenericType {
+
+            public void install(Provider<Component> provider) {
+
+            }
+
         }
 
     }
