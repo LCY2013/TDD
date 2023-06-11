@@ -1,10 +1,13 @@
 package org.fufeng.tdd;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,12 +18,16 @@ import static org.mockito.Mockito.when;
 @Nested
 public class InjectionTest {
     Dependency dependency = mock(Dependency.class);
+    Provider<Dependency> dependencyProvider = mock(Provider.class);
 
     Context context = mock(Context.class);
 
     @BeforeEach
-    public void setup() {
-        when(context.get(Dependency.class)).thenReturn(Optional.of(dependency));
+    public void setup() throws NoSuchFieldException {
+        when(context.get(eq(Dependency.class))).thenReturn(Optional.of(dependency));
+
+        ParameterizedType type = (ParameterizedType) InjectionTest.class.getDeclaredField("dependencyProvider").getGenericType();
+        when(context.get(eq(type))).thenReturn(Optional.of(dependencyProvider));
     }
 
     @Nested
@@ -92,6 +99,21 @@ public class InjectionTest {
             }
         }
 
+        //todo support inject constructor
+        static class ProviderInjectConstructor {
+            private final Provider<Dependency> dependency;
+
+            @Inject
+            public ProviderInjectConstructor(Provider<Dependency> dependency) {
+                this.dependency = dependency;
+            }
+        }
+
+        @Test
+        public void should_inject_provider_via_inject_constructor() {
+            ProviderInjectConstructor injectConstructor = new InjectionProvider<>(ProviderInjectConstructor.class).get(context);
+            assertSame(dependencyProvider, injectConstructor.dependency);
+        }
     }
 
     @Nested
@@ -173,6 +195,20 @@ public class InjectionTest {
                 assertThrows(IllegalComponentException.class, () -> new InjectionProvider<>(FinalInjectField.class));
             }
         }
+
+        //todo support inject field
+        static class ProviderInjectField {
+
+            @Inject
+            private Provider<Dependency> dependency;
+        }
+
+        @Test
+        public void should_inject_provider_via_inject_constructor() {
+            ProviderInjectField injectConstructor = new InjectionProvider<>(ProviderInjectField.class).get(context);
+            assertSame(dependencyProvider, injectConstructor.dependency);
+        }
+
     }
 
     @Nested
@@ -310,5 +346,20 @@ public class InjectionTest {
             }
         }
 
+        //todo support inject method
+        static class ProviderInjectMethod {
+            private Provider<Dependency> dependency;
+
+            @Inject
+            public void install(Provider<Dependency> dependency) {
+                this.dependency = dependency;
+            }
+        }
+
+        @Test
+        public void should_inject_provider_via_inject_constructor() {
+            ProviderInjectMethod injectConstructor = new InjectionProvider<>(ProviderInjectMethod.class).get(context);
+            assertSame(dependencyProvider, injectConstructor.dependency);
+        }
     }
 }

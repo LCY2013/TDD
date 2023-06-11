@@ -1,5 +1,9 @@
 package org.fufeng.tdd;
 
+import jakarta.inject.Provider;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class ContextConfig {
@@ -20,7 +24,16 @@ public class ContextConfig {
         return new Context() {
             @Override
             public <Type> Optional<Type> get(Class<Type> type) {
-                return Optional.ofNullable(componentPrividers.get(type)).map(t -> (Type) t.get(this));
+                return Optional.ofNullable(componentPrividers.get(type)).
+                        map(provider -> (Type) provider.get(this));
+            }
+
+            @Override
+            public Optional get(ParameterizedType type) {
+                if (type.getRawType() != Provider.class) return Optional.empty();
+                Type componentType = type.getActualTypeArguments()[0];
+                return Optional.ofNullable(componentPrividers.get(componentType)).
+                        map(provider -> (Provider<Object>) () -> provider.get(this));
             }
         };
     }

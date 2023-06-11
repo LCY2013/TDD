@@ -107,12 +107,22 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
     }
 
     private static Object[] toDependencies(Context context, Executable executable) {
-        return Arrays.stream(executable.getParameterTypes()).
-                map(pt -> context.get(pt).get()).toArray();
+        return Arrays.stream(executable.getParameters()).
+                map(pt -> {
+                    Type type = pt.getParameterizedType();
+                    if (type instanceof ParameterizedType) {
+                        return context.get((ParameterizedType) type).get();
+                    }
+                   return context.get((Class<?>) type).get();
+                }).toArray();
     }
 
     private static Object toDependency(Context context, Field field) {
-        return context.get(field.getType()).get();
+        Type type = field.getGenericType();
+        if (type instanceof ParameterizedType) {
+            return context.get((ParameterizedType) type).get();
+        }
+        return context.get((Class<?>) type).get();
     }
 
     private static <T> List<T> traverse(Class<?> component, BiFunction<List<T>, Class<?>, List<T>> finder) {
