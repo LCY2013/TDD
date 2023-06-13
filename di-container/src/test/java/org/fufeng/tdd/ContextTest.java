@@ -216,7 +216,7 @@ public class ContextTest {
         @ParameterizedTest
         @MethodSource
         public void should_throw_exception_if_dependency_not_found(Class<? extends Component> component) {
-            config.bind(Component.class, ComponentWithInjectConstructor.class);
+            config.bind(Component.class, component);
             DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext().get(Component.class));
 
             assertEquals(Dependency.class, exception.getDependency());
@@ -225,8 +225,12 @@ public class ContextTest {
 
         public static Stream<Arguments> should_throw_exception_if_dependency_not_found() {
             return Stream.of(Arguments.of(Named.of("Constructor Injection", MissingDependencyConstructor.class)),
-                    Arguments.of(Named.of("Field Injection", MissingDependecyField.class)),
-                    Arguments.of(Named.of("Method Injection", MissingDependecyMethod.class)));
+                    Arguments.of(Named.of("Field Injection", MissingDependencyField.class)),
+                    Arguments.of(Named.of("Method Injection", MissingDependencyMethod.class)),
+                    Arguments.of(Named.of("Provider Constructor Injection", MissingDependencyProviderConstructor.class)),
+                    Arguments.of(Named.of("Provider Field Injection", MissingDependencyProviderField.class)),
+                    Arguments.of(Named.of("Provider Method Injection", MissingDependencyProviderMethod.class))
+                    );
         }
 
         static class MissingDependencyConstructor implements Component {
@@ -235,14 +239,31 @@ public class ContextTest {
             }
         }
 
-        static class MissingDependecyField implements Component {
+        static class MissingDependencyProviderConstructor implements Component {
+            @Inject
+            public MissingDependencyProviderConstructor(Provider<Dependency> dependency) {
+            }
+        }
+
+        static class MissingDependencyField implements Component {
             @Inject
             Dependency dependency;
         }
 
-        static class MissingDependecyMethod implements Component {
+        static class MissingDependencyProviderField implements Component {
+            @Inject
+            Provider<Dependency> dependency;
+        }
+
+        static class MissingDependencyMethod implements Component {
             @Inject
             public void install(Dependency dependency) {
+            }
+        }
+
+        static class MissingDependencyProviderMethod implements Component {
+            @Inject
+            public void install(Provider<Dependency> dependency) {
             }
         }
 
@@ -252,8 +273,8 @@ public class ContextTest {
         public void should_throw_exception_if_cyclic_dependencies_found(
                 Class<? extends Component> component,
                 Class<? extends Dependency> dependency) {
-            config.bind(Component.class, ComponentWithInjectConstructor.class);
-            config.bind(Dependency.class, DependencyDependencyWithInjectConstructor.class);
+            config.bind(Component.class, component);
+            config.bind(Dependency.class, dependency);
 
             CyclicDependenciesException exception =
                     assertThrowsExactly(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
@@ -424,6 +445,22 @@ public class ContextTest {
             public void install(Component component) {
 
             }
+        }
+
+        static class CyclicDependencyProviderConstructor implements Dependency {
+
+            @Inject
+            public CyclicDependencyProviderConstructor(Provider<Component> component) {
+            }
+        }
+
+        @Test
+        public void should_not_throw_exception_if_cyclic_dependency_via_provider() {
+            config.bind(Component.class, CyclicComponentInjectionConstructor.class);
+            config.bind(Dependency.class, CyclicDependencyProviderConstructor.class);
+
+            Context context = config.getContext();
+            assertTrue(context.get(Component.class).isPresent());
         }
 
 

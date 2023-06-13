@@ -8,23 +8,23 @@ import java.util.*;
 
 public class ContextConfig {
 
-    private final Map<Class<?>, ComponentProvider<?>> componentPrividers = new HashMap<>();
+    private final Map<Class<?>, ComponentProvider<?>> componentProviders = new HashMap<>();
 
     public <Type> void bind(Class<Type> componentType, Type instance) {
-        componentPrividers.put(componentType, ctx -> instance);
+        componentProviders.put(componentType, ctx -> instance);
     }
 
     public <Type, Implementation extends Type> void bind(Class<Type> type, Class<Implementation> implementation) {
-        componentPrividers.put(type, new InjectionProvider<>(implementation));
+        componentProviders.put(type, new InjectionProvider<>(implementation));
     }
 
     public Context getContext() {
-        componentPrividers.keySet().forEach(component -> checkDependencies(component, new Stack<>()));
+        componentProviders.keySet().forEach(component -> checkDependencies(component, new Stack<>()));
 
         return new Context() {
             @Override
             public <Type> Optional<Type> get(Class<Type> type) {
-                return Optional.ofNullable(componentPrividers.get(type)).
+                return Optional.ofNullable(componentProviders.get(type)).
                         map(provider -> (Type) provider.get(this));
             }
 
@@ -32,23 +32,33 @@ public class ContextConfig {
             public Optional get(ParameterizedType type) {
                 if (type.getRawType() != Provider.class) return Optional.empty();
                 Type componentType = type.getActualTypeArguments()[0];
-                return Optional.ofNullable(componentPrividers.get(componentType)).
+                return Optional.ofNullable(componentProviders.get(componentType)).
                         map(provider -> (Provider<Object>) () -> provider.get(this));
             }
         };
     }
 
     private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-        for (Class<?> dependency : componentPrividers.get(component).getDependencies()) {
-            if (!componentPrividers.containsKey(dependency)) {
-                throw new DependencyNotFoundException(component, dependency);
+        for (Type dependency : componentProviders.get(component).getDependencyTypes()) {
+            if (dependency instanceof Class) checkDependency(component, visiting, (Class<?>) dependency);
+            if (dependency instanceof ParameterizedType) {
+                Class<?> typeArgument = (Class<?>) ((ParameterizedType) dependency).getActualTypeArguments()[0];
+                if (!componentProviders.containsKey(typeArgument)) {
+                    throw new DependencyNotFoundException(component, typeArgument);
+                }
             }
-            if (visiting.contains(dependency)) {
-                throw new CyclicDependenciesException(visiting);
-            }
-            visiting.push(dependency);
-            checkDependencies(dependency, visiting);
-            visiting.pop();
         }
+    }
+
+    private void checkDependency(Class<?> component, Stack<Class<?>> visiting, Class<?> dependency) {
+        if (!componentProviders.containsKey(dependency)) {
+            throw new DependencyNotFoundException(component, dependency);
+        }
+        if (visiting.contains(dependency)) {
+            throw new CyclicDependenciesException(visiting);
+        }
+        visiting.push(dependency);
+        checkDependencies(dependency, visiting);
+        visiting.pop();
     }
 }

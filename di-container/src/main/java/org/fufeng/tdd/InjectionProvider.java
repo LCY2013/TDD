@@ -25,8 +25,10 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
         this.injectFields = getFields(component);
         this.injectMethods = getMethods(component);
 
-        if (injectFields.stream().anyMatch(field -> Modifier.isFinal(field.getModifiers()))) throw new IllegalComponentException(component);
-        if (injectMethods.stream().anyMatch(method -> Arrays.stream(method.getTypeParameters()).anyMatch(t->true))) throw new IllegalComponentException(component);
+        if (injectFields.stream().anyMatch(field -> Modifier.isFinal(field.getModifiers())))
+            throw new IllegalComponentException(component);
+        if (injectMethods.stream().anyMatch(method -> Arrays.stream(method.getTypeParameters()).anyMatch(t -> true)))
+            throw new IllegalComponentException(component);
     }
 
     @Override
@@ -39,7 +41,7 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
             }
             for (Method method : injectMethods) {
                 method.setAccessible(true);
-                method.invoke(instance,toDependencies(context, method));
+                method.invoke(instance, toDependencies(context, method));
             }
             return instance;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -52,6 +54,14 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
         return concat(concat(Arrays.stream(injectConstructor.getParameterTypes()),
                         injectFields.stream().map(Field::getType)),
                 injectMethods.stream().flatMap(m -> Stream.of(m.getParameterTypes()))
+        ).toList();
+    }
+
+    @Override
+    public List<Type> getDependencyTypes() {
+        return concat(concat(Arrays.stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
+                injectFields.stream().map(Field::getGenericType)),
+                injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType))
         ).toList();
     }
 
@@ -113,7 +123,7 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
                     if (type instanceof ParameterizedType) {
                         return context.get((ParameterizedType) type).get();
                     }
-                   return context.get((Class<?>) type).get();
+                    return context.get((Class<?>) type).get();
                 }).toArray();
     }
 
