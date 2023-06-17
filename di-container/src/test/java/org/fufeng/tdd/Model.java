@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 public class Model {
 }
 
-interface Component {
+interface TestComponent {
 
     default <T> T dependency() {
         return null;
@@ -21,14 +21,14 @@ interface AnotherDependency {
 
 }
 
-class ComponentWithDefaultConstructor implements Component {
+class ComponentWithDefaultConstructor implements TestComponent {
 
     public ComponentWithDefaultConstructor() {
     }
 
 }
 
-class ComponentWithInjectConstructor implements Component {
+class ComponentWithInjectConstructor implements TestComponent {
 
     private final Dependency dependency;
 
@@ -43,7 +43,7 @@ class ComponentWithInjectConstructor implements Component {
 
 }
 
-class ComponentWithMultiInjectConstructor implements Component {
+class ComponentWithMultiInjectConstructor implements TestComponent {
 
     private final String name;
     private Double value;
@@ -65,7 +65,7 @@ class ComponentWithMultiInjectConstructor implements Component {
     }
 }
 
-class ComponentWithNoInjectConstructorNorDefaultConstructor implements Component {
+class ComponentWithNoInjectConstructorNorDefaultConstructor implements TestComponent {
     public ComponentWithNoInjectConstructorNorDefaultConstructor(String name) {
     }
 
@@ -88,10 +88,10 @@ class DependencyWithInjectConstructor implements Dependency {
 
 class DependencyDependencyWithInjectConstructor implements Dependency {
 
-    private final Component component;
+    private final TestComponent component;
 
     @Inject
-    public DependencyDependencyWithInjectConstructor(Component component) {
+    public DependencyDependencyWithInjectConstructor(TestComponent component) {
         this.component = component;
     }
 
@@ -99,10 +99,10 @@ class DependencyDependencyWithInjectConstructor implements Dependency {
 
 class AnotherDependencyDependedOnComponent implements AnotherDependency {
 
-    private final Component component;
+    private final TestComponent component;
 
     @Inject
-    public AnotherDependencyDependedOnComponent(Component component) {
+    public AnotherDependencyDependedOnComponent(TestComponent component) {
         this.component = component;
     }
 

@@ -1,5 +1,6 @@
 package org.fufeng.tdd;
 
+//todo different component
 public class IllegalComponentException extends RuntimeException {
 
     private Class<?> component;
