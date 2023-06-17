@@ -39,7 +39,7 @@ public class ContextConfig {
     }
 
     private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-        for (Type dependency : componentProviders.get(component).getDependencyTypes()) {
+        for (Type dependency : componentProviders.get(component).getDependencies()) {
             if (dependency instanceof Class) checkDependency(component, visiting, (Class<?>) dependency);
             if (dependency instanceof ParameterizedType) {
                 Class<?> typeArgument = (Class<?>) ((ParameterizedType) dependency).getActualTypeArguments()[0];

@@ -50,15 +50,7 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
     }
 
     @Override
-    public List<Class<?>> getDependencies() {
-        return concat(concat(Arrays.stream(injectConstructor.getParameterTypes()),
-                        injectFields.stream().map(Field::getType)),
-                injectMethods.stream().flatMap(m -> Stream.of(m.getParameterTypes()))
-        ).toList();
-    }
-
-    @Override
-    public List<Type> getDependencyTypes() {
+    public List<Type> getDependencies() {
         return concat(concat(Arrays.stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
                 injectFields.stream().map(Field::getGenericType)),
                 injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType))
@@ -118,17 +110,14 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
 
     private static Object[] toDependencies(Context context, Executable executable) {
         return Arrays.stream(executable.getParameters()).
-                map(pt -> {
-                    Type type = pt.getParameterizedType();
-                    if (type instanceof ParameterizedType) {
-                        return context.get((ParameterizedType) type).get();
-                    }
-                    return context.get((Class<?>) type).get();
-                }).toArray();
+                map(pt -> toDependency(context, pt.getParameterizedType())).toArray();
     }
 
     private static Object toDependency(Context context, Field field) {
-        Type type = field.getGenericType();
+        return toDependency(context, field.getGenericType());
+    }
+
+    private static Object toDependency(Context context, Type type) {
         if (type instanceof ParameterizedType) {
             return context.get((ParameterizedType) type).get();
         }
