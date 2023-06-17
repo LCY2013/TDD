@@ -2,7 +2,6 @@ package org.fufeng.tdd;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 
 public class ContainerTest {
 
@@ -18,11 +17,6 @@ public class ContainerTest {
 
         @Nested
         class ProviderType {
-
-        }
-
-        @Nested
-        class Qualifier {
 
         }
 

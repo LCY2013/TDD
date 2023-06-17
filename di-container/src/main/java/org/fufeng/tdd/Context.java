@@ -1,5 +1,6 @@
 package org.fufeng.tdd;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
@@ -12,6 +13,8 @@ public interface Context {
     class Ref<ComponentType> {
         private Type container;
         private Class<ComponentType> component;
+
+        private Annotation qualifier;
 
         protected void init(Type type) {
             if (type instanceof ParameterizedType containerType) {
@@ -27,7 +30,8 @@ public interface Context {
             init(type);
         }
 
-        private Ref(Type type) {
+        private Ref(Type type, Annotation qualifier) {
+            this.qualifier = qualifier;
             init(type);
         }
 
@@ -36,11 +40,15 @@ public interface Context {
         }
 
         public static Ref of(Type type) {
-            return new Ref(type);
+            return new Ref(type, null);
         }
 
         public static <ComponentType> Ref<ComponentType> of(Class<ComponentType> type) {
             return new Ref<>(type);
+        }
+
+        public static <ComponentType> Ref<ComponentType> of(Class<ComponentType> type, Annotation qualifier) {
+            return new Ref<>(type, qualifier);
         }
 
         public Type getContainer() {
@@ -49,6 +57,10 @@ public interface Context {
 
         public Class<ComponentType> getComponent() {
             return this.component;
+        }
+
+        public Annotation getQualifier() {
+            return qualifier;
         }
 
         public boolean isContainer() {

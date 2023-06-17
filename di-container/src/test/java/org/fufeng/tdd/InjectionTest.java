@@ -122,6 +122,12 @@ public class InjectionTest {
             assertSame(dependencyProvider, injectConstructor.dependency);
         }
 
+        @Nested
+        class WithQualifier {
+            //todo inject with qualifier
+            //todo throw illegal component if illegal qualifier given to injection point
+        }
+
     }
 
     @Nested
@@ -177,7 +183,7 @@ public class InjectionTest {
                 InjectionProvider<ComponentWithFieldInjection> provider =
                         new InjectionProvider<>(ComponentWithFieldInjection.class);
 
-                assertArrayEquals(new Context.Ref[]{Context.Ref.of(Dependency.class)}, provider.getDependencies().toArray(Context.Ref[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(Dependency.class)} , provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             @Test
@@ -222,6 +228,12 @@ public class InjectionTest {
         public void should_include_provider_type_from_inject_field() {
             InjectionProvider<ProviderInjectField> provider = new InjectionProvider<>(ProviderInjectField.class);
             assertArrayEquals(new Context.Ref[]{Context.Ref.of(dependencyProviderType)}, provider.getDependencies().toArray());
+        }
+
+        @Nested
+        class WithQualifier {
+            //todo inject with qualifier
+            //todo throw illegal component if illegal qualifier given to injection point
         }
 
     }
@@ -382,6 +394,12 @@ public class InjectionTest {
         public void should_include_provider_type_from_inject_method() {
             InjectionProvider<ProviderInjectMethod> provider = new InjectionProvider<>(ProviderInjectMethod.class);
             assertArrayEquals(new Context.Ref[]{Context.Ref.of(dependencyProviderType)}, provider.getDependencies().toArray());
+        }
+
+        @Nested
+        class WithQualifier {
+            //todo inject with qualifier
+            //todo throw illegal component if illegal qualifier given to injection point
         }
     }
 }
