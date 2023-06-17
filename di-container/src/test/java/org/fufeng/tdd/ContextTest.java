@@ -10,7 +10,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -40,12 +43,14 @@ public class ContextTest {
 
             config.bind(Component.class, instance);
 
-            assertSame(instance, config.getContext().get(Component.class).get());
+            Context context = config.getContext();
+            assertSame(instance, context.get(Context.Ref.of(Component.class)).get());
         }
 
         @Test
         public void should_return_empty_if_component_not_defined() {
-            Optional<Component> component = config.getContext().get(Component.class);
+            Context context = config.getContext();
+            Optional<Component> component = context.get(Context.Ref.of(Component.class));
             assertTrue(component.isEmpty());
         }
 
@@ -58,7 +63,8 @@ public class ContextTest {
             config.bind(Dependency.class, dependency);
             config.bind(Component.class, componentType);
 
-            Optional<Component> component = config.getContext().get(Component.class);
+            Context context = config.getContext();
+            Optional<Component> component = context.get(Context.Ref.of(Component.class));
 
             assertTrue(component.isPresent());
             assertSame(dependency, component.get().dependency());
@@ -113,7 +119,8 @@ public class ContextTest {
 
         @Test
         public void should_retrieve_empty_for_unbind_type() {
-            Optional<Component> component = config.getContext().get(Component.class);
+            Context context = config.getContext();
+            Optional<Component> component = context.get(Context.Ref.of(Component.class));
             assertTrue(component.isEmpty());
         }
 
@@ -128,12 +135,9 @@ public class ContextTest {
 
             Context context = config.getContext();
 
-            ParameterizedType type = (ParameterizedType) new TypeLiteral<Provider<Component>>() {
-            }.getType();
-            //assertEquals(Provider.class, type.getRawType());
-            //assertEquals(Component.class, type.getActualTypeArguments()[0]);
+            Provider<Component> provider = context.get(new Context.Ref<Provider<Component>>() {
+            }).get();
 
-            Provider<Component> provider = (Provider<Component>) context.get(type).get();
             assertSame(component, provider.get());
         }
 
@@ -146,16 +150,8 @@ public class ContextTest {
 
             Context context = config.getContext();
 
-            ParameterizedType type = (ParameterizedType) new TypeLiteral<List<Component>>() {
-            }.getType();
-
-            assertFalse(context.get(type).isPresent());
-        }
-
-        static abstract class TypeLiteral<T> {
-            public Type getType() {
-                return ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
-            }
+            assertFalse(context.get(new Context.Ref<List<Component>>() {
+            }).isPresent());
         }
 
         @Test
@@ -192,7 +188,7 @@ public class ContextTest {
             Type type = method.getParameters()[0].getParameterizedType();
 
             if (type instanceof ParameterizedType) {
-                type = ((ParameterizedType)type).getActualTypeArguments()[0];
+                type = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
 
             assertEquals(Component.class, type);
@@ -217,7 +213,10 @@ public class ContextTest {
         @MethodSource
         public void should_throw_exception_if_dependency_not_found(Class<? extends Component> component) {
             config.bind(Component.class, component);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext().get(Component.class));
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> {
+                Context context = config.getContext();
+                context.get(Context.Ref.of(Component.class));
+            });
 
             assertEquals(Dependency.class, exception.getDependency());
             assertEquals(Component.class, exception.getComponent());
@@ -230,7 +229,7 @@ public class ContextTest {
                     Arguments.of(Named.of("Provider Constructor Injection", MissingDependencyProviderConstructor.class)),
                     Arguments.of(Named.of("Provider Field Injection", MissingDependencyProviderField.class)),
                     Arguments.of(Named.of("Provider Method Injection", MissingDependencyProviderMethod.class))
-                    );
+            );
         }
 
         static class MissingDependencyConstructor implements Component {
@@ -277,7 +276,10 @@ public class ContextTest {
             config.bind(Dependency.class, dependency);
 
             CyclicDependenciesException exception =
-                    assertThrowsExactly(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
+                    assertThrowsExactly(CyclicDependenciesException.class, () -> {
+                        Context context = config.getContext();
+                        context.get(Context.Ref.of(Component.class));
+                    });
 
             Set<Class<?>> classes = exception.getComponents();
 
@@ -355,7 +357,10 @@ public class ContextTest {
             config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
 
             CyclicDependenciesException exception =
-                    assertThrowsExactly(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
+                    assertThrowsExactly(CyclicDependenciesException.class, () -> {
+                        Context context = config.getContext();
+                        context.get(Context.Ref.of(Component.class));
+                    });
 
             Set<Class<?>> classes = exception.getComponents();
 
@@ -460,7 +465,7 @@ public class ContextTest {
             config.bind(Dependency.class, CyclicDependencyProviderConstructor.class);
 
             Context context = config.getContext();
-            assertTrue(context.get(Component.class).isPresent());
+            assertTrue(context.get(Context.Ref.of(Component.class)).isPresent());
         }
 
 
@@ -477,7 +482,10 @@ public class ContextTest {
         public void should_throw_exception_if_transitive_dependency_not_found() {
             config.bind(Component.class, ComponentWithInjectConstructor.class);
             config.bind(Dependency.class, DependencyWithInjectConstructor.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext().get(Component.class));
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> {
+                Context context = config.getContext();
+                context.get(Context.Ref.of(Component.class));
+            });
 
             assertEquals(String.class, exception.getDependency());
             assertEquals(Dependency.class, exception.getComponent());
@@ -488,7 +496,10 @@ public class ContextTest {
             config.bind(Component.class, ComponentWithInjectConstructor.class);
             config.bind(Dependency.class, DependencyDependencyWithInjectConstructor.class);
 
-            CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
+            CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> {
+                Context context = config.getContext();
+                context.get(Context.Ref.of(Component.class));
+            });
 
             Set<Class<?>> classes = exception.getComponents();
             assertEquals(2, classes.size());
@@ -511,7 +522,10 @@ public class ContextTest {
             config.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
             config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
 
-            CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> config.getContext().get(Component.class));
+            CyclicDependenciesException exception = assertThrows(CyclicDependenciesException.class, () -> {
+                Context context = config.getContext();
+                context.get(Context.Ref.of(Component.class));
+            });
 
             Set<Class<?>> classes = exception.getComponents();
             assertEquals(3, classes.size());

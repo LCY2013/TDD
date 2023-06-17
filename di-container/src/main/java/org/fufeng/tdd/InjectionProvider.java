@@ -3,10 +3,7 @@ package org.fufeng.tdd;
 import jakarta.inject.Inject;
 
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,11 +47,11 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
     }
 
     @Override
-    public List<Type> getDependencies() {
+    public List<Context.Ref> getDependencies() {
         return concat(concat(Arrays.stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
-                injectFields.stream().map(Field::getGenericType)),
+                        injectFields.stream().map(Field::getGenericType)),
                 injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType))
-        ).toList();
+        ).map(Context.Ref::of).toList() ;
     }
 
     private static List<Field> getFields(Class<?> component) {
@@ -118,7 +115,7 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
     }
 
     private static Object toDependency(Context context, Type type) {
-        return context.get(type).get();
+        return context.get(Context.Ref.of(type)).get();
     }
 
     private static <T> List<T> traverse(Class<?> component, BiFunction<List<T>, Class<?>, List<T>> finder) {

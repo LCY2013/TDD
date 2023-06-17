@@ -2,8 +2,6 @@ package org.fufeng.tdd;
 
 import jakarta.inject.Provider;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.*;
 
 public class ContextConfig {
@@ -24,67 +22,41 @@ public class ContextConfig {
         return new Context() {
 
             @Override
-            public Optional get(Type type) {
-                if (isContainerType(type)) {
-                    return getContainer((ParameterizedType) type);
+            public Optional<?> get(Ref ref) {
+                if (ref.isContainer()) {
+                    if (ref.getContainer() != Provider.class) return Optional.empty();
+
+                    return Optional.ofNullable(componentProviders.get(ref.getComponent())).
+                            map(provider -> (Provider<Object>) () -> provider.get(this));
                 }
-                return getComponent((Class<?>) type);
-            }
 
-            private Optional<?> getComponent(Class<?> type) {
-                return Optional.ofNullable(componentProviders.get(type)).
-                        map(provider -> (Object) provider.get(this));
-            }
-
-            private Optional getContainer(ParameterizedType type) {
-                if (type.getRawType() != Provider.class) return Optional.empty();
-                Type componentType = getContainerType(type);
-                return Optional.ofNullable(componentProviders.get(componentType)).
-                        map(provider -> (Provider<Object>) () -> provider.get(this));
+                return Optional.ofNullable(componentProviders.get(ref.getComponent())).
+                        map(provider -> provider.get(this));
             }
 
         };
     }
 
-    private static boolean isContainerType(Type type) {
-        return type instanceof ParameterizedType;
+    class Reference {
+
     }
 
-    private static Type getContainerType(ParameterizedType type) {
-        return type.getActualTypeArguments()[0];
-    }
-
-    private static boolean isComponentType(Type dependency) {
-        return dependency instanceof Class;
-    }
+    // ComponentRef、ContainerRef -> Ref
 
     private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-        for (Type dependency : componentProviders.get(component).getDependencies()) {
-            if (isComponentType(dependency)) {
-                checkComponentDependency(component, visiting, (Class<?>) dependency);
-                continue;
+        for (Context.Ref ref : componentProviders.get(component).getDependencies()) {
+            if (!componentProviders.containsKey(ref.getComponent())) {
+                throw new DependencyNotFoundException(component, ref.getComponent());
             }
-            if (isContainerType(dependency)) {
-                checkContainerTypeDependency(component, (ParameterizedType) dependency);
+            if (ref.isComponent()) {
+                if (visiting.contains(ref.getComponent())) {
+                    throw new CyclicDependenciesException(visiting);
+                }
+                visiting.push(ref.getComponent());
+                checkDependencies(ref.getComponent(), visiting);
+                visiting.pop();
             }
         }
     }
 
-    private void checkContainerTypeDependency(Class<?> component, ParameterizedType dependency) {
-        if (!componentProviders.containsKey((Class<?>) getContainerType(dependency))) {
-            throw new DependencyNotFoundException(component, (Class<?>) getContainerType(dependency));
-        }
-    }
-
-    private void checkComponentDependency(Class<?> component, Stack<Class<?>> visiting, Class<?> dependency) {
-        if (!componentProviders.containsKey(dependency)) {
-            throw new DependencyNotFoundException(component, dependency);
-        }
-        if (visiting.contains(dependency)) {
-            throw new CyclicDependenciesException(visiting);
-        }
-        visiting.push(dependency);
-        checkDependencies(dependency, visiting);
-        visiting.pop();
-    }
 }
