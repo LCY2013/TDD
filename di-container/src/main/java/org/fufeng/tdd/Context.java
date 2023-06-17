@@ -9,14 +9,11 @@ public interface Context {
 
     <ComponentType> Optional<ComponentType> get(Ref<ComponentType> ref);
 
-    class GenericType<ComponentType> extends Ref<ComponentType> {
-    }
-
     class Ref<ComponentType> {
         private Type container;
         private Class<ComponentType> component;
 
-        private void init(Type type) {
+        protected void init(Type type) {
             if (type instanceof ParameterizedType containerType) {
                 this.container = containerType.getRawType();
                 this.component = (Class<ComponentType>) containerType.getActualTypeArguments()[0];
