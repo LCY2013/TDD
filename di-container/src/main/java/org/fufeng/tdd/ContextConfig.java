@@ -15,7 +15,7 @@ public class ContextConfig {
     }
 
     public <Type> void bind(Class<Type> componentType, Type instance, Annotation... qualifiers) {
-        if (Arrays.stream(qualifiers).anyMatch(qualifier -> !qualifier.getClass().isAnnotationPresent(Qualifier.class))) throw new IllegalComponentException();
+        if (Arrays.stream(qualifiers).anyMatch(qualifier -> !qualifier.annotationType().isAnnotationPresent(Qualifier.class))) throw new IllegalComponentException();
         for (Annotation qualifier : qualifiers) {
             components.put(new Component(componentType, qualifier), ctx -> instance);
         }
@@ -26,7 +26,7 @@ public class ContextConfig {
     }
 
     public <Type, Implementation extends Type> void bind(Class<Type> type, Class<Implementation> implementation, Annotation... qualifiers) {
-        if (Arrays.stream(qualifiers).anyMatch(qualifier -> !qualifier.getClass().isAnnotationPresent(Qualifier.class))) throw new IllegalComponentException();
+        if (Arrays.stream(qualifiers).anyMatch(qualifier -> !qualifier.annotationType().isAnnotationPresent(Qualifier.class))) throw new IllegalComponentException();
         for (Annotation qualifier : qualifiers) {
             components.put(new Component(type, qualifier), new InjectionProvider<>(implementation));
         }
@@ -62,16 +62,16 @@ public class ContextConfig {
 
     // ComponentRef、ContainerRef -> Ref
 
-    private void checkDependencies(Component component, Stack<Class<?>> visiting) {
+    private void checkDependencies(Component component, Stack<Component> visiting) {
         for (ComponentRef componentRef : components.get(component).getDependencies()) {
             if (!components.containsKey(componentRef.component())) {
-                throw new DependencyNotFoundException(component.type(), componentRef.component().type());
+                throw new DependencyNotFoundException(component, componentRef.component());
             }
             if (componentRef.getComponentType()) {
-                if (visiting.contains(componentRef.component().type())) {
+                if (visiting.contains(componentRef.component())) {
                     throw new CyclicDependenciesException(visiting);
                 }
-                visiting.push(componentRef.component().type());
+                visiting.push(componentRef.component());
                 checkDependencies(componentRef.component(), visiting);
                 visiting.pop();
             }

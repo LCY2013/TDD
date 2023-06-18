@@ -3,10 +3,7 @@ package org.fufeng.tdd;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -14,7 +11,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -22,7 +18,6 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -302,8 +297,8 @@ public class ContextTest {
                 context.get(ComponentRef.of(TestComponent.class));
             });
 
-            assertEquals(Dependency.class, exception.getDependency());
-            assertEquals(TestComponent.class, exception.getComponent());
+            assertEquals(Dependency.class, exception.getDependency().type());
+            assertEquals(TestComponent.class, exception.getComponent().type());
         }
 
         public static Stream<Arguments> should_throw_exception_if_dependency_not_found() {
@@ -558,8 +553,8 @@ public class ContextTest {
             config.bind(TestComponent.class, ComponentWithInjectConstructor.class);
             DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext());
 
-            assertEquals(Dependency.class, exception.getDependency());
-            assertEquals(TestComponent.class, exception.getComponent());
+            assertEquals(Dependency.class, exception.getDependency().type());
+            assertEquals(TestComponent.class, exception.getComponent().type());
         }
 
         @Test
@@ -571,8 +566,8 @@ public class ContextTest {
                 context.get(ComponentRef.of(TestComponent.class));
             });
 
-            assertEquals(String.class, exception.getDependency());
-            assertEquals(Dependency.class, exception.getComponent());
+            assertEquals(String.class, exception.getDependency().type());
+            assertEquals(Dependency.class, exception.getComponent().type());
         }
 
         @Test
@@ -670,7 +665,55 @@ public class ContextTest {
         @Nested
         class WithQualifier {
             //todo dependency missing if qualifier not match
+            @Test
+            public void should_throw_exception_if_dependency_with_qualifier_not_found() {
+                config.bind(Dependency.class, new Dependency() {
+                });
+
+                config.bind(InjectConstructor.class, InjectConstructor.class, new NameLiteral("Owner"));
+
+                DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext());
+
+                assertEquals(new Component(InjectConstructor.class, new NameLiteral("Owner")), exception.getComponent());
+                assertEquals(new Component(Dependency.class, new SkywalkerLiteral()), exception.getDependency());
+            }
+
+            static class InjectConstructor {
+                private Dependency dependency;
+
+                @Inject
+                public InjectConstructor(@Skywalker Dependency dependency) {
+                    this.dependency = dependency;
+                }
+            }
+
             //todo check cyclic dependencies with qualifier
+            // A -> @Skywalker A -> @Named A(instance0
+            static class SkywalkerDependency implements Dependency {
+
+                @Inject
+                public SkywalkerDependency(@jakarta.inject.Named("ChosenOne") Dependency dependency) {
+                }
+            }
+
+            static class NoCyclicDependency implements Dependency{
+
+                @Inject
+                public NoCyclicDependency(@Skywalker Dependency dependency) {
+                }
+            }
+
+            @Test
+            public void should_not_throw_exception_if_component_with_same_type_taged_with_different_qualifier() {
+                Dependency dependency = new Dependency() {
+                };
+                config.bind(Dependency.class, dependency, new NameLiteral("ChosenOne"));
+                config.bind(Dependency.class, SkywalkerDependency.class, new SkywalkerLiteral());
+                config.bind(Dependency.class, NoCyclicDependency.class);
+
+                assertDoesNotThrow(() -> config.getContext());
+            }
+
         }
     }
 
@@ -683,6 +726,16 @@ record NameLiteral(String value) implements jakarta.inject.Named {
         return jakarta.inject.Named.class;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof jakarta.inject.Named named) return Objects.equals(named.value(), value);
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return "value".hashCode() * 127 ^ value.hashCode();
+    }
 }
 
 @Documented
@@ -699,6 +752,10 @@ record SkywalkerLiteral() implements Skywalker {
         return Skywalker.class;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Skywalker;
+    }
 }
 
 record TestLiteral() implements Test {

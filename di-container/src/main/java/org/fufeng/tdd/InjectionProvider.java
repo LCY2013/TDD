@@ -1,7 +1,9 @@
 package org.fufeng.tdd;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -48,10 +50,18 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
 
     @Override
     public List<ComponentRef> getDependencies() {
-        return concat(concat(Arrays.stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
-                        injectFields.stream().map(Field::getGenericType)),
-                injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType))
-        ).map(ComponentRef::of).toList() ;
+        return concat(concat(
+                        Arrays.stream(injectConstructor.getParameters()).map(InjectionProvider::toComponentRef),
+                        injectFields.stream().map(Field::getGenericType).map(ComponentRef::of)
+                ),
+                injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(InjectionProvider::toComponentRef))
+        ).toList();
+    }
+
+    private static ComponentRef<?> toComponentRef(Parameter p) {
+        Annotation qualifier = Arrays.stream(p.getAnnotations()).
+                filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).findFirst().orElse(null);
+        return ComponentRef.of(p.getParameterizedType(), qualifier);
     }
 
     private static List<Field> getFields(Class<?> component) {
