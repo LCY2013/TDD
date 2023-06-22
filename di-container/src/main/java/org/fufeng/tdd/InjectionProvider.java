@@ -52,16 +52,22 @@ public class InjectionProvider<T> implements ComponentProvider<T> {
     public List<ComponentRef> getDependencies() {
         return concat(concat(
                         Arrays.stream(injectConstructor.getParameters()).map(InjectionProvider::toComponentRef),
-                        injectFields.stream().map(Field::getGenericType).map(ComponentRef::of)
+                        injectFields.stream().map(InjectionProvider::toComponentRef)
                 ),
                 injectMethods.stream().flatMap(m -> Arrays.stream(m.getParameters()).map(InjectionProvider::toComponentRef))
         ).toList();
     }
 
-    private static ComponentRef<?> toComponentRef(Parameter p) {
-        Annotation qualifier = Arrays.stream(p.getAnnotations()).
+    private static ComponentRef toComponentRef(Field field) {
+        Annotation qualifier = Arrays.stream(field.getAnnotations()).
                 filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).findFirst().orElse(null);
-        return ComponentRef.of(p.getParameterizedType(), qualifier);
+        return ComponentRef.of(field.getGenericType(), qualifier);
+    }
+
+    private static ComponentRef<?> toComponentRef(Parameter parameter) {
+        Annotation qualifier = Arrays.stream(parameter.getAnnotations()).
+                filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).findFirst().orElse(null);
+        return ComponentRef.of(parameter.getParameterizedType(), qualifier);
     }
 
     private static List<Field> getFields(Class<?> component) {

@@ -134,7 +134,7 @@ public class InjectionTest {
             }
 
             @Test
-            public void should_include_qualifier_with_dependency() {
+            public void should_include_dependency_with_qualifier() {
                 InjectionProvider<InjectConstructor> provider = new InjectionProvider<>(InjectConstructor.class);
                 assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NameLiteral("ChosenOne"))}, provider.getDependencies().toArray());
             }
@@ -249,6 +249,18 @@ public class InjectionTest {
         @Nested
         class WithQualifier {
             //todo inject with qualifier
+            static class InjectField {
+                @Inject
+                @Named("ChosenOne")
+                Dependency dependency;
+            }
+
+            @Test
+            public void should_include_dependency_with_qualifier() {
+                InjectionProvider<InjectField> provider = new InjectionProvider<>(InjectField.class);
+                assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NameLiteral("ChosenOne"))}, provider.getDependencies().toArray());
+            }
+
             //todo include qualifier with dependency
             //todo throw illegal component if illegal qualifier given to injection point
         }
@@ -416,6 +428,18 @@ public class InjectionTest {
         @Nested
         class WithQualifier {
             //todo inject with qualifier
+            static class InjectMethod {
+                @Inject
+                public InjectMethod(@Named("ChosenOne") Dependency dependency) {
+                }
+            }
+
+            @Test
+            public void should_include_dependency_with_qualifier() {
+                InjectionProvider<InjectMethod> provider = new InjectionProvider<>(InjectMethod.class);
+                assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NameLiteral("ChosenOne"))}, provider.getDependencies().toArray());
+            }
+
             //todo include qualifier with dependency
             //todo throw illegal component if illegal qualifier given to injection point
         }
